@@ -20,36 +20,61 @@ MAIL_REPLY = ""
 
 import os
 
-def send_attachment_mail(attach,content,receiver,file_type = 'text/csv'):
+def send_attachment_mail(attachs,subject,content,receiver,cc = None):
 
     try:
 
-        f = open(attach)
-
-        msg = Message(content,MAIL_USERNAME,receiver)
+        msg = Message(subject,MAIL_USERNAME,receiver)
         msg.body = content
         msg.html = content
         msg.reply_to = MAIL_REPLY 
         msg.recipients = receiver
-        msg.attach(os.path.basename(attach),file_type,f.read())
-        send_async_email(receiver,msg)
+        msg.cc = cc
+
+        for attach in attachs:
+            f = open(attach)
+            msg.attach(os.path.basename(attach),'text/csv',f.read())
+
+        to = gen_mail_to(receiver,cc)
+
+        send_async_email(to,msg)
 
     except Exception,e:
         print e
 
-def send_result_mail(content,receiver):
+def send_result_mail(subject,content,receiver,cc = None):
 
     try:
 
-        msg = Message(content,MAIL_USERNAME,receiver)
+        msg = Message(subject,MAIL_USERNAME,receiver)
         msg.body = content
         msg.html = content
         msg.reply_to = MAIL_REPLY 
         msg.recipients = receiver
-        send_async_email(receiver,msg)
+        msg.cc = cc
+
+        to = gen_mail_to(receiver,cc)
+
+        send_async_email(to,msg)
 
     except Exception,e:
         print e
+
+def gen_mail_to(receiver,cc):
+    if cc is None:
+        to = receiver
+    else:
+        if type(receiver) == type([]):
+            if type(cc) == type([]):
+                to = receiver + cc
+            else:
+                to = receiver.append(cc)
+        else:
+            if type(cc) == type([]):
+                to = cc.append(receiver)
+            else:
+                to = [receiver,cc]
+    return to
 
 def send_async_email(receiver,msg):
 	smtp = smtplib.SMTP()
